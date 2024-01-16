@@ -1,7 +1,7 @@
 // PracticaBlackjack.cpp : Este archivo contiene la función "main". La ejecución del programa comienza y termina ahí.
 // Utilitzar diccionaris si els arrays no em funcionen
 
-
+//compruebo el repositorio
 #include <iostream>
 #include <algorithm>
 #include <vector>

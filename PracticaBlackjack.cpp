@@ -5,6 +5,11 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/Audio.hpp>
 using namespace std;
 int posicionMazo = 0;
 int posicionJugador = 0;
@@ -120,6 +125,46 @@ void preparacion(int PALOS, int (&mazo)[52][2], int valores[CARTASPALO]) {//con 
 	//barajado del mazo
 	random_shuffle(begin(mazo), end(mazo));
 }
+int window() {
+	sf::Color colors[4] = { sf::Color::Green,sf::Color::Red,sf::Color::Blue,sf::Color::Yellow };
+	// create the window
+	sf::RenderWindow window(sf::VideoMode(1366, 768), "MunchJack"/*, sf::Style::Fullscreen*/);
+	sf::CircleShape shape(100.f);
+	int colorNum = 0;
+	
+	
+
+	// run the program as long as the window is open
+	while (window.isOpen())
+	{
+		shape.setFillColor(colors[colorNum]);
+		// check all the window's events that were triggered since the last iteration of the loop
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			// "close requested" event: we close the window
+			if (event.type == sf::Event::Closed)
+				window.close();
+		}
+
+		// clear the window with black color
+		window.clear(sf::Color::Black);
+
+		// draw everything here...
+		window.draw(shape);
+
+		// end the current frame
+		window.display();
+		if (colorNum+1==(sizeof(colors)/sizeof(sf::Color))) {
+			colorNum = 0;
+		}
+		else {
+			colorNum++;
+		}
+	}
+
+	return 0;
+}
 int main()
 {
 	srand(time(NULL));
@@ -143,9 +188,7 @@ int main()
 	preparacion(PALOS, mazo, valorCartas);//prepara el mazo
 
 	//impresionMazo(PALOS, CARTASPALO, mazo);
-	
-	
-
+	window();
 }
 
 

@@ -17,6 +17,20 @@ int posicionCrupier = 0;
 const int TAMANOMANO = 15;
 const int PALOS = 4;
 const int CARTASPALO = 13;
+
+const float ALTOCARTA = 95;//95 +1
+const float ANCHOCARTA = 70; // 70+1
+
+const int POSICION_INICIAL_JUGADORX = 445;
+const int POSICION_INICIAL_JUGADORY = 352;
+
+const int POSICION_INICIAL_CRUPIERX = 445;
+const int POSICION_INICIAL_CRUPIERY = 92;
+
+const float POSICION_MAZO_X = 444.0f;//X del 0.0 del Mazo
+const float POSICION_MAZO_Y = 222.0f;
+
+// las proporciones de las cartas son 72 de ancho 95 de alto
 void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPALO]){
 	puntuacion = 0;
 	int ases = 0;
@@ -101,9 +115,9 @@ void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador
 
 void impresionMazo(int PALOS, int CARTASPALO, int(&mazo)[52][2]) {
 	//impresion del mazo
-	for (int i = 0; i < PALOS * CARTASPALO; i++) {//POR CADA posicion del mazo
+	/*for (int i = 0; i < PALOS * CARTASPALO; i++) {//POR CADA posicion del mazo
 		cout << mazo[i][0] << ", " << mazo[i][1] << "\n";
-	}
+	}*/
 }
 void preparacion(int PALOS, int (&mazo)[52][2], int valores[CARTASPALO]) {//con (&mazo)[tamaño][tamaño] puedo pasar el array como referencia
 	int miNum = 0;
@@ -165,6 +179,41 @@ int window() {
 
 	return 0;
 }
+int pruebasSfml() {
+	sf::Texture txTablero;
+	sf::Texture txReverso;
+	//Defino el tablero
+	txTablero.loadFromFile("./img/tablero.png");
+	// Crear un sprite para la textura
+	sf::Sprite spTablero(txTablero);  
+	//tablero definido
+	
+	//Defino la carta Reverso
+	txReverso.loadFromFile("./img/reverso.png");
+	sf::Sprite spReverso(txReverso);
+	spReverso.setPosition(POSICION_MAZO_X, POSICION_MAZO_Y);//por ahora una carta
+	// Obtener el tamaño de la textura (ancho y alto)
+	sf::Vector2u textureSize = txTablero.getSize();  
+	sf::RenderWindow window(sf::VideoMode(textureSize.x, textureSize.y), "MunchJack", sf::Style::Titlebar | sf::Style::Close);//tamaño de las dimensiones de "tablero" e "inmutable"
+
+	while (window.isOpen()) { 
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			// "close requested" event: we close the window
+			if (event.type == sf::Event::Closed)
+				window.close();
+		}		
+		window.clear(sf::Color::Black); 
+		window.draw(spTablero);
+		window.draw(spReverso);
+
+		window.display(); 
+	}
+	return 0;
+
+
+}
 int main()
 {
 	srand(time(NULL));
@@ -172,9 +221,11 @@ int main()
 	//declaracion de arrays que se van a utilizar
 	//estas 2 tendran la informacion de las cartas, las cartas tendran referencias a esta información
 	string palos[PALOS] = { "Corazones","Picas","Treboles","Diamantes" };
+	int rowPalos[PALOS] = { 197,99,1,295 };
+
 	string nombreCartas[CARTASPALO] = { "As","2","3","4","5","6","7","8","9","10","J","Q","K"};
 	int valorCartas[CARTASPALO] = {1,2,3,4,5,6,7,8,9,10,10,10,10};
-
+	int columnCarta[CARTASPALO] = { 1,74,147,220,293,366,439,512,585,658,731,804,877 };
 
 	//aqui creo el mazo, son 52 arrays que contienen arrays de 2
 	int mazo[52][2];
@@ -188,7 +239,9 @@ int main()
 	preparacion(PALOS, mazo, valorCartas);//prepara el mazo
 
 	//impresionMazo(PALOS, CARTASPALO, mazo);
-	window();
+	//window();
+	pruebasSfml();
+
 }
 
 

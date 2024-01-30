@@ -14,21 +14,36 @@ using namespace std;
 int posicionMazo = 0;
 int posicionJugador = 0;
 int posicionCrupier = 0;
-const int TAMANOMANO = 15;
+const int TAMANOMANO = 9;
 const int PALOS = 4;
 const int CARTASPALO = 13;
 
 const float ALTOCARTA = 95;//95 +1
 const float ANCHOCARTA = 70; // 70+1
 
-const int POSICION_INICIAL_JUGADORX = 445;
-const int POSICION_INICIAL_JUGADORY = 352;
+const int POSICION_INICIAL_JUGADORX = 365;
+const int POSICION_INICIAL_JUGADORY = 353;
 
-const int POSICION_INICIAL_CRUPIERX = 445;
+const int POSICION_INICIAL_CRUPIERX = 365;
 const int POSICION_INICIAL_CRUPIERY = 92;
 
-const float POSICION_MAZO_X = 444.0f;//X del 0.0 del Mazo
+const float POSICION_MAZO_X = 445.0f;//X del 0.0 del Mazo
 const float POSICION_MAZO_Y = 222.0f;
+
+const int COLUMN[CARTASPALO] = { 1,74,147,220,293,366,439,512,585,658,731,804,877 };
+const int ROW[PALOS] = { 197,99,1,295 };
+
+
+
+struct CARTA {
+	int p00[2];
+	int p01[2];
+	int p10[2];
+	int p11[2];
+	bool player;
+
+};
+vector <CARTA> cartasTablero;
 
 // las proporciones de las cartas son 72 de ancho 95 de alto
 void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPALO]){
@@ -47,13 +62,32 @@ void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPAL
 	}
 	
 }
-void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[], int &posicionMano) {
+string nombrar(int palo, int mano) {
+	return "" + palo + mano;
+}
+void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[], int &posicionMano, bool player ) {
 	for (int j = 0; j < 2; j++) {//la carta robada
-		mano[posicionMano][j] = mazo[posicionMazo][j];
+		mano[posicionMano][j] = mazo[posicionMazo][j];//asigno a la mano correspondiente una carta con valor de la carta del mazo
 	}
-	calculo(punt, mano, valores);
+	CARTA miCarta;//obtiene los puntos del sprite de la carta
+	miCarta.p00[0] = ROW[mano[posicionMano][0]];//palo->Y del sprite
+	miCarta.p00[1] = COLUMN[mano[posicionMano][1]];//valor->X del sprite
+
+	miCarta.p01[0] = ROW[mano[posicionMano][0]];
+	miCarta.p01[1] = COLUMN[mano[posicionMano][1]]+ANCHOCARTA;
+
+	miCarta.p10[0] = ROW[mano[posicionMano][0]]+ALTOCARTA;
+	miCarta.p10[1] = COLUMN[mano[posicionMano][1]];
+
+	miCarta.p11[0] = ROW[mano[posicionMano][0]]+ALTOCARTA;
+	miCarta.p11[1] = COLUMN[mano[posicionMano][1]]+ANCHOCARTA;
+
+	miCarta.player = player;
+
+	cartasTablero.push_back(miCarta);
 	posicionMazo++;// cada vez que se utiliza el mazo se le suma uno a carta.
 	posicionMano++;
+
 }
 void victoria() {
 	cout << "ganaste";
@@ -64,7 +98,7 @@ void derrota(){
 
 void fase3(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {// modo crupier, roba hasta intentar superar al jugador
 	while (puntCrupier < puntJugador) {
-		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier);
+		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier, false);
 	}
 	if (puntCrupier == puntJugador || puntCrupier < 21) {
 		derrota();
@@ -79,7 +113,7 @@ void fase2(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador
 		string opcion;
 		cin >> opcion;
 		if (opcion == "s") {
-			robo(puntJugador, manoJugador, mazo, valores, posicionJugador);
+			robo(puntJugador, manoJugador, mazo, valores, posicionJugador, true);
 		}
 		else if (opcion == "n") {
 			fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
@@ -97,12 +131,12 @@ void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador
 
 	//jugador
 	for (int i = 0; i < 2; i++) {//jugador roba 2 cartas
-		robo(puntJugador, manoJugador, mazo, valores,posicionJugador);
+		robo(puntJugador, manoJugador, mazo, valores,posicionJugador, true);
 	}
 
 	//crupier
 	for (int i = 0; i < 1; i++) {
-		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier);
+		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier, false);
 	}							
 	//si se reparten 21 al jugador pasamos a modo crupier
 	if (puntJugador == 21) {
@@ -182,6 +216,7 @@ int window() {
 int pruebasSfml() {
 	sf::Texture txTablero;
 	sf::Texture txReverso;
+	sf::Texture txCartas;
 	//Defino el tablero
 	txTablero.loadFromFile("./img/tablero.png");
 	// Crear un sprite para la textura
@@ -190,9 +225,13 @@ int pruebasSfml() {
 	
 	//Defino la carta Reverso
 	txReverso.loadFromFile("./img/reverso.png");
-	sf::Sprite spReverso(txReverso);
-	spReverso.setPosition(POSICION_MAZO_X, POSICION_MAZO_Y);//por ahora una carta
+	
 	// Obtener el tamaño de la textura (ancho y alto)
+
+	// defino la textura de las cartas
+	txCartas.loadFromFile("./img/cards.png");
+	
+
 	sf::Vector2u textureSize = txTablero.getSize();  
 	sf::RenderWindow window(sf::VideoMode(textureSize.x, textureSize.y), "MunchJack", sf::Style::Titlebar | sf::Style::Close);//tamaño de las dimensiones de "tablero" e "inmutable"
 
@@ -203,10 +242,38 @@ int pruebasSfml() {
 			// "close requested" event: we close the window
 			if (event.type == sf::Event::Closed)
 				window.close();
-		}		
+		}
+		
+
 		window.clear(sf::Color::Black); 
 		window.draw(spTablero);
-		window.draw(spReverso);
+		int desplazamientoY = 0;
+		for (int i = 0; i < 52 - posicionMazo; i++) {
+			
+			
+			
+			sf::Sprite spReverso(txReverso);
+			spReverso.setPosition(POSICION_MAZO_X, POSICION_MAZO_Y + desplazamientoY);//por ahora una carta
+			desplazamientoY -= 1;
+			window.draw(spReverso);
+		}
+		
+		int desplazamientoJugador = 0;
+		int desplazamientoCrupier = 0; 
+		for (CARTA card : cartasTablero) {
+			
+			sf::IntRect r1(card.p00[0], card.p00[1], ANCHOCARTA, ALTOCARTA);
+			sf::Sprite spCarta(txCartas, r1);
+			if (card.player) {
+				spCarta.setPosition(POSICION_INICIAL_JUGADORX + desplazamientoJugador, POSICION_INICIAL_JUGADORY);
+				desplazamientoJugador += 20;
+			}
+			else {
+				spCarta.setPosition(POSICION_INICIAL_CRUPIERX + desplazamientoCrupier, POSICION_INICIAL_CRUPIERY);
+				desplazamientoCrupier += 20;
+			}
+			window.draw(spCarta);
+		}
 
 		window.display(); 
 	}
@@ -214,6 +281,7 @@ int pruebasSfml() {
 
 
 }
+
 int main()
 {
 	srand(time(NULL));
@@ -221,11 +289,9 @@ int main()
 	//declaracion de arrays que se van a utilizar
 	//estas 2 tendran la informacion de las cartas, las cartas tendran referencias a esta información
 	string palos[PALOS] = { "Corazones","Picas","Treboles","Diamantes" };
-	int rowPalos[PALOS] = { 197,99,1,295 };
-
 	string nombreCartas[CARTASPALO] = { "As","2","3","4","5","6","7","8","9","10","J","Q","K"};
+
 	int valorCartas[CARTASPALO] = {1,2,3,4,5,6,7,8,9,10,10,10,10};
-	int columnCarta[CARTASPALO] = { 1,74,147,220,293,366,439,512,585,658,731,804,877 };
 
 	//aqui creo el mazo, son 52 arrays que contienen arrays de 2
 	int mazo[52][2];

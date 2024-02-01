@@ -247,17 +247,16 @@ int pruebasSfml() {
 
 		window.clear(sf::Color::Black); 
 		window.draw(spTablero);
-		int desplazamientoY = 0;
+		float desplazamientoY = 0;
+		// dibujado del mazo en el tablero
 		for (int i = 0; i < 52 - posicionMazo; i++) {
-			
-			
-			
 			sf::Sprite spReverso(txReverso);
-			spReverso.setPosition(POSICION_MAZO_X, POSICION_MAZO_Y + desplazamientoY);//por ahora una carta
-			desplazamientoY -= 1;
+			spReverso.setPosition(POSICION_MAZO_X, POSICION_MAZO_Y + desplazamientoY);
+			desplazamientoY -= 0.5;
 			window.draw(spReverso);
 		}
 		
+		//dibujado de de las manos en el tablero
 		int desplazamientoJugador = 0;
 		int desplazamientoCrupier = 0; 
 		for (CARTA card : cartasTablero) {

@@ -54,21 +54,27 @@ struct CARTA {
 vector <CARTA> cartasTablero;
 
 // las proporciones de las cartas son 72 de ancho 95 de alto
-void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPALO]){
+void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPALO],bool player,int posicionMano){
 	puntuacion = 0;
 	int ases = 0;
-	for (int i = 0; i < TAMANOMANO; i++) {
+	for (int i = 0; i <= posicionMano; i++) {
 		puntuacion += valores[mano[i][1]];
-		if (mano[i][1] == 1) {// calculo los ases de la mano
+		if (mano[i][1] == 0) {// calculo los ases de la mano
 			ases++;
 		}
 	}
-	while (ases > 0 && puntuacion <= 11) {
-		for (int i = 0; i < ases; i++) {
+	for (int i = 0; i < ases; i++) {
+		if (puntuacion <= 11) {
 			puntuacion += 10;
 		}
+			
 	}
-	
+	if (player) {
+		cout << "Puntuacion jugador: " << puntuacion <<"\n";
+	}
+	else{
+		cout << "Puntuacion crupier: " << puntuacion << "\n";
+	}
 }
 string nombrar(int palo, int mano) {
 	return "" + palo + mano;
@@ -93,23 +99,28 @@ void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[
 	miCarta.player = player;
 
 	cartasTablero.push_back(miCarta);
+	calculo(punt,mano,valores,player,posicionMano);
 	posicionMazo++;// cada vez que se utiliza el mazo se le suma uno a carta.
 	posicionMano++;
 
 	
 }
 void victoria() {
-	cout << "ganaste";
+	cout << "ganaste\n";
 }
 void derrota(){
-	cout << "perdiste";
+	cout << "perdiste\n";
 }
 
 void fase3(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {// modo crupier, roba hasta intentar superar al jugador
+	bFase1 = false;
+	bFase2 = false;
+	bFase3 = true;
 	while (puntCrupier < puntJugador) {
 		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier, false);
 	}
-	if (puntCrupier == puntJugador || puntCrupier < 21) {
+	bFase3 = false;
+	if (puntCrupier == puntJugador || puntCrupier <= 21) {
 		derrota();
 	}
 	else {
@@ -117,18 +128,8 @@ void fase3(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador
 	}
 }
 void fase2(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {// Bucle en que se pregunta al jugador si quiere robar una carta hasta que se pasa o pasa al crupier
-
-	while (puntJugador <21 && bFase2) {
-		cout << "quieres robar una carta?";
-		string opcion;
-		cin >> opcion;
-		if (opcion == "s") {
-			robo(puntJugador, manoJugador, mazo, valores, posicionJugador, true);
-		}
-		else if (opcion == "n") {
-			fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
-		}
-	}
+	robo(puntJugador, manoJugador, mazo, valores, posicionJugador, true);
+	
 	if (puntJugador == 21) {
 		bFase1 = false;
 		bFase2 = false;
@@ -143,7 +144,6 @@ void fase2(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador
 void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador, int(&manoCrupier)[TAMANOMANO][2], int &puntCrupier, int valores[CARTASPALO]) {
 	// se reparten 2 cartas al jugador y 1 al crupier
 	//jugador
-	cout << "espera";
 	for (int i = 0; i < 2; i++) {//jugador roba 2 cartas
 		robo(puntJugador, manoJugador, mazo, valores,posicionJugador, true);
 	}
@@ -277,11 +277,26 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 			}p*/
 			if (event.type == sf::Event::TextEntered)
 			{
-				if (event.text.unicode < 128)
-					if (static_cast<char>(event.text.unicode) == 'k' && bFase1) {
-						fase1(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+				if (event.text.unicode < 128) {
+					if (bFase1) {
+						if (static_cast<char>(event.text.unicode) == 'k') {
+							fase1(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+						}
 					}
+					else if (bFase2) {
+						if (static_cast<char>(event.text.unicode) == 'k') {
+							fase2(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+						}
+						if (static_cast<char>(event.text.unicode) == 'e') {
+							fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+						}
+					}
+					 
+				}
 					std::cout << "ASCII character typed: " << static_cast<char>(event.text.unicode) << std::endl;
+			}
+			if (bFase3) {
+				fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 			}
 		}
 		

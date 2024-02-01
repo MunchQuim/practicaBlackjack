@@ -3,6 +3,7 @@
 
 //compruebo el repositorio
 #include <iostream>
+
 #include <algorithm>
 #include <vector>
 
@@ -10,6 +11,11 @@
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/Audio.hpp>
+#include <windows.h>
+
+#include <thread>
+#include <chrono>
+
 using namespace std;
 int posicionMazo = 0;
 int posicionJugador = 0;
@@ -33,7 +39,9 @@ const float POSICION_MAZO_Y = 222.0f;
 const int COLUMN[CARTASPALO] = { 1,74,147,220,293,366,439,512,585,658,731,804,877 };
 const int ROW[PALOS] = { 197,99,1,295 };
 
-
+bool bFase1 = true;
+bool bFase2 = false;
+bool bFase3 = false;
 
 struct CARTA {
 	int p00[2];
@@ -65,7 +73,7 @@ void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPAL
 string nombrar(int palo, int mano) {
 	return "" + palo + mano;
 }
-void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[], int &posicionMano, bool player ) {
+void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[], int& posicionMano, bool player) {
 	for (int j = 0; j < 2; j++) {//la carta robada
 		mano[posicionMano][j] = mazo[posicionMazo][j];//asigno a la mano correspondiente una carta con valor de la carta del mazo
 	}
@@ -88,6 +96,7 @@ void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[
 	posicionMazo++;// cada vez que se utiliza el mazo se le suma uno a carta.
 	posicionMano++;
 
+	
 }
 void victoria() {
 	cout << "ganaste";
@@ -108,7 +117,8 @@ void fase3(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador
 	}
 }
 void fase2(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {// Bucle en que se pregunta al jugador si quiere robar una carta hasta que se pasa o pasa al crupier
-	while (puntJugador <21) {
+
+	while (puntJugador <21 && bFase2) {
 		cout << "quieres robar una carta?";
 		string opcion;
 		cin >> opcion;
@@ -120,16 +130,20 @@ void fase2(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador
 		}
 	}
 	if (puntJugador == 21) {
+		bFase1 = false;
+		bFase2 = false;
+		bFase3 = true;
 		fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 	}
 	else if (puntJugador > 21) {
+		bFase2 = false;
 		derrota();
 	}
 }
 void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador, int(&manoCrupier)[TAMANOMANO][2], int &puntCrupier, int valores[CARTASPALO]) {
 	// se reparten 2 cartas al jugador y 1 al crupier
-
 	//jugador
+	cout << "espera";
 	for (int i = 0; i < 2; i++) {//jugador roba 2 cartas
 		robo(puntJugador, manoJugador, mazo, valores,posicionJugador, true);
 	}
@@ -140,10 +154,16 @@ void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador
 	}							
 	//si se reparten 21 al jugador pasamos a modo crupier
 	if (puntJugador == 21) {
-		fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+		bFase1 = false;
+		bFase2 = false;
+		bFase3 = true;
+		//fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 	}
 	else {//de lo contrario pasamos a fase2
-		fase2(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+		bFase1 = false;
+		bFase2 = true;
+		bFase3 = false;
+		//fase2(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 	}
 }
 
@@ -213,7 +233,7 @@ int window() {
 
 	return 0;
 }
-int pruebasSfml() {
+int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {
 	sf::Texture txTablero;
 	sf::Texture txReverso;
 	sf::Texture txCartas;
@@ -235,13 +255,34 @@ int pruebasSfml() {
 	sf::Vector2u textureSize = txTablero.getSize();  
 	sf::RenderWindow window(sf::VideoMode(textureSize.x, textureSize.y), "MunchJack", sf::Style::Titlebar | sf::Style::Close);//tamaño de las dimensiones de "tablero" e "inmutable"
 
+	
+
+
 	while (window.isOpen()) { 
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
 			// "close requested" event: we close the window
-			if (event.type == sf::Event::Closed)
+			if (event.type == sf::Event::Closed) {
 				window.close();
+			}
+			/*else if (event.type == sf::Event::MouseButtonPressed)
+			{
+				if (event.mouseButton.button == sf::Mouse::Left)//evento de clicar
+				{
+					//if(event.mouseButton.x  event.mouseButton.y)
+					//std::cout << "the right button was pressed" << std::endl;
+					
+				}
+			}p*/
+			if (event.type == sf::Event::TextEntered)
+			{
+				if (event.text.unicode < 128)
+					if (static_cast<char>(event.text.unicode) == 'k' && bFase1) {
+						fase1(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+					}
+					std::cout << "ASCII character typed: " << static_cast<char>(event.text.unicode) << std::endl;
+			}
 		}
 		
 
@@ -261,7 +302,7 @@ int pruebasSfml() {
 		int desplazamientoCrupier = 0; 
 		for (CARTA card : cartasTablero) {
 			
-			sf::IntRect r1(card.p00[0], card.p00[1], ANCHOCARTA, ALTOCARTA);
+			sf::IntRect r1(card.p00[1], card.p00[0], ANCHOCARTA, ALTOCARTA);
 			sf::Sprite spCarta(txCartas, r1);
 			if (card.player) {
 				spCarta.setPosition(POSICION_INICIAL_JUGADORX + desplazamientoJugador, POSICION_INICIAL_JUGADORY);
@@ -305,7 +346,9 @@ int main()
 
 	//impresionMazo(PALOS, CARTASPALO, mazo);
 	//window();
-	pruebasSfml();
+	
+	
+	pruebasSfml(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valorCartas);
 
 }
 

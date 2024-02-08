@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <vector>
+#include <cctype>//to lower
+#include <string>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
@@ -46,7 +48,7 @@ const int ROW[PALOS] = { 197,99,1,295 };
 bool bFase1 = true;
 bool bFase2 = false;
 bool bFase3 = false;
-
+bool bEleccionAs = false;
 char keyRobar = 'k';
 char keyPlantar = 'e';
 char keyReiniciar = 'r';
@@ -54,6 +56,8 @@ char keyReiniciar = 'r';
 const int DELAY = 500;
 
 std::thread faseThread; 
+
+sf::Event event;
 
 struct CARTA {
 	int p00[2];
@@ -65,7 +69,35 @@ struct CARTA {
 };
 vector <CARTA> cartasTablero;
 
+void eleccionAs(int(&mazo)[52][2],bool player, int j) {
+	bEleccionAs = true;
 
+
+
+	if (mazo[posicionMazo][j] == 0 && j == 1) {// si sale un as mazo[posicionMazo][1] == 0
+		if (player) { // si se trata de un jugador
+			cout << "Que valor quieres que valga el AS?";
+			cout << "a) 1\tb) 11";
+			string eleccion = "c";
+			while ((eleccion) != "a" && eleccion != "b") {
+				cin >> eleccion;
+				//eleccion = tolower(eleccion);
+				for (char& c : eleccion) {
+					c = tolower(c); //c es cada letra de elleccion pillado como referencia por lo que cualquier cambio afecta al string, tolower solo afecta a characters
+				}
+
+			}if (eleccion == "b") {// si vale "b"
+				mazo[posicionMazo][j] = 13;//la 13 posicion de valores == 11
+			}
+			//si vale "a" en este caso es la unica opcion restante
+				//nada porque por defecto vale 1
+
+
+
+		}
+	}
+	bEleccionAs = false;
+}
 // las proporciones de las cartas son 72 de ancho 95 de alto
 void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPALO],bool player,int posicionMano){
 	puntuacion = 0;
@@ -76,12 +108,15 @@ void calculo( int& puntuacion, int (&mano)[TAMANOMANO][2], int valores[CARTASPAL
 			ases++;
 		}
 	}
-	for (int i = 0; i < ases; i++) {
-		if (puntuacion <= 11) {
-			puntuacion += 10;
+	if (!player) {//el calculo automatico de ases solo para crupier
+		for (int i = 0; i < ases; i++) {
+			if (puntuacion <= 11) {
+				puntuacion += 10;
+			}
+
 		}
-			
 	}
+	
 	if (player) {
 		cout << "Puntuacion jugador: " << puntuacion <<"\n";
 	}
@@ -94,20 +129,51 @@ string nombrar(int palo, int mano) {
 }
 void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[], int& posicionMano, bool player) {
 	for (int j = 0; j < 2; j++) {//la carta robada
+		eleccionAs(mazo, player, j);
 		mano[posicionMano][j] = mazo[posicionMazo][j];//asigno a la mano correspondiente una carta con valor de la carta del mazo
+		// determinar si el as es un 1 o un 11 en caso de que sea un jugador
+		
+		/*if (mazo[posicionMazo][j] == 0 && j == 1) {// si sale un as mazo[posicionMazo][1] == 0
+			if (player) { // si se trata de un jugador
+				cout << "Que valor quieres que valga el AS?";
+				cout << "a) 1\tb) 11";
+				string eleccion;
+				while ((eleccion) != "a" && eleccion != "b") {
+					cin >> eleccion;
+					for (char& c : eleccion) {
+						c = tolower(c); //c es cada letra de elleccion pillado como referencia por lo que cualquier cambio afecta al string, tolower solo afecta a characters
+					}
+
+				}if (eleccion == "b") {// si vale "b"
+					mazo[posicionMazo][j] == 13;//la 13 posicion de valores == 11
+				}
+				//si vale "a" en este caso es la unica opcion restante
+					//nada porque por defecto vale 1
+				
+				
+				
+			}
+		}*/
+
 	}
 	CARTA miCarta;//obtiene los puntos del sprite de la carta
 	miCarta.p00[0] = ROW[mano[posicionMano][0]];//palo->Y del sprite
-	miCarta.p00[1] = COLUMN[mano[posicionMano][1]];//valor->X del sprite
+	if ( mano[posicionMano][1]==13) {//en el caso que tenga valor11 para el jugador sigue pillando como si fuera un as 
+		miCarta.p00[1] = COLUMN[0];//valor->X del sprite
+	}
+	else {
+		miCarta.p00[1] = COLUMN[mano[posicionMano][1]];//valor->X del sprite
+	}
+	
 
-	miCarta.p01[0] = ROW[mano[posicionMano][0]];
+	/*miCarta.p01[0] = ROW[mano[posicionMano][0]];
 	miCarta.p01[1] = COLUMN[mano[posicionMano][1]]+ANCHOCARTA;
 
 	miCarta.p10[0] = ROW[mano[posicionMano][0]]+ALTOCARTA;
 	miCarta.p10[1] = COLUMN[mano[posicionMano][1]];
 
 	miCarta.p11[0] = ROW[mano[posicionMano][0]]+ALTOCARTA;
-	miCarta.p11[1] = COLUMN[mano[posicionMano][1]]+ANCHOCARTA;
+	miCarta.p11[1] = COLUMN[mano[posicionMano][1]]+ANCHOCARTA;*/
 
 	miCarta.player = player;
 	
@@ -205,7 +271,7 @@ void preparacion(int PALOS, int (&mazo)[52][2], int valores[CARTASPALO], int(&ma
 	posicionCrupier = 0;
 	posicionMazo = 0;
 	//relleno del mazo
-	for (int j = 0; j < PALOS; j++) {
+	for (int j = 0; j < PALOS; j++) {//crea un mazo con [Palo][numero]
 		for (int k = 0; k < CARTASPALO; k++) {
 			for (int i = 0; i < 2; i++) {
 				if (i == 0) {
@@ -249,7 +315,7 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 
 
 	while (window.isOpen()) { 
-		sf::Event event;
+		//sf::Event event;
 		while (window.pollEvent(event))
 		{
 			// "close requested" event: we close the window
@@ -265,7 +331,7 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 					
 				}
 			}p*/
-			if (event.type == sf::Event::TextEntered)
+			if (event.type == sf::Event::TextEntered && !bEleccionAs)
 			{
 				if (event.text.unicode < 128) {
 					if (static_cast<char>(event.text.unicode) == keyReiniciar) {
@@ -365,7 +431,7 @@ int main()
 	string palos[PALOS] = { "Corazones","Picas","Treboles","Diamantes" };
 	string nombreCartas[CARTASPALO] = { "As","2","3","4","5","6","7","8","9","10","J","Q","K"};
 
-	int valorCartas[CARTASPALO] = {1,2,3,4,5,6,7,8,9,10,10,10,10};
+	int valorCartas[CARTASPALO+1] = {1,2,3,4,5,6,7,8,9,10,10,10,10,11};
 
 	//aqui creo el mazo, son 52 arrays que contienen arrays de 2
 	int mazo[52][2];

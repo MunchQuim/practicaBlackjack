@@ -17,6 +17,7 @@
 #include <future>
 #include <chrono>
 
+#include <cstdlib>
 //funcion asyncrona con sleep ayudado con chatgpt
 
 using namespace std;
@@ -48,8 +49,11 @@ bool bFase3 = false;
 
 char keyRobar = 'k';
 char keyPlantar = 'e';
+char keyReiniciar = 'r';
 
 const int DELAY = 500;
+
+std::thread faseThread; 
 
 struct CARTA {
 	int p00[2];
@@ -116,18 +120,24 @@ void robo(int &punt, int(&mano)[TAMANOMANO][2], int (&mazo)[52][2], int valores[
 }
 void victoria() {
 	cout << "ganaste\n";
+	bFase1 = false;
+	bFase2 = false;
+	bFase3 = false;
 }
 void derrota(){
 	cout << "perdiste\n";
+	bFase1 = false;
+	bFase2 = false;
+	bFase3 = false;
 }
 
 
 void fase3(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJugador, int(&manoCrupier)[TAMANOMANO][2], int& puntCrupier, int valores[CARTASPALO]) {// modo crupier, roba hasta intentar superar al jugador
-	
+	bFase3 = false;
 	while (puntCrupier < puntJugador) {
 		robo(puntCrupier, manoCrupier, mazo, valores, posicionCrupier, false);
 	}
-	bFase3 = false;
+	
 	if (puntCrupier == puntJugador || puntCrupier <= 21) {
 		derrota();
 	}
@@ -153,6 +163,7 @@ void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador
 	// se reparten 2 cartas al jugador y 1 al crupier
 	//jugadorx
 	//std::thread roboThread;
+	bFase1 = false;
 	for (int i = 0; i < 2; i++) {//jugador roba 2 cartas
 		robo(puntJugador, manoJugador, mazo, valores, posicionJugador, true);
 		
@@ -166,13 +177,11 @@ void fase1( int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2],int &puntJugador
 	}							
 	//si se reparten 21 al jugador pasamos a modo crupier
 	if (puntJugador == 21) {
-		bFase1 = false;
 		bFase2 = false;
 		bFase3 = true;
 		//fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 	}
 	else {//de lo contrario pasamos a fase2
-		bFase1 = false;
 		bFase2 = true;
 		bFase3 = false;
 		//fase2(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
@@ -185,8 +194,16 @@ void impresionMazo(int PALOS, int CARTASPALO, int(&mazo)[52][2]) {
 		cout << mazo[i][0] << ", " << mazo[i][1] << "\n";
 	}*/
 }
-void preparacion(int PALOS, int (&mazo)[52][2], int valores[CARTASPALO]) {//con (&mazo)[tamaño][tamaño] puedo pasar el array como referencia
-	int miNum = 0;
+void preparacion(int PALOS, int (&mazo)[52][2], int valores[CARTASPALO], int(&manoJugador)[TAMANOMANO][2], int(&manoCrupier)[TAMANOMANO][2]) {//con (&mazo)[tamaño][tamaño] puedo pasar el array como referencia
+	//reinicio
+	int miNum = 0;	
+	bFase1 = true;
+	bFase2 = false;
+	bFase3 = false;
+	cartasTablero.clear();
+	posicionJugador = 0;
+	posicionCrupier = 0;
+	posicionMazo = 0;
 	//relleno del mazo
 	for (int j = 0; j < PALOS; j++) {
 		for (int k = 0; k < CARTASPALO; k++) {
@@ -228,7 +245,7 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 	sf::Vector2u textureSize = txTablero.getSize();  
 	sf::RenderWindow window(sf::VideoMode(textureSize.x, textureSize.y), "MunchJack", sf::Style::Titlebar | sf::Style::Close);//tamaño de las dimensiones de "tablero" e "inmutable"
 
-	std::thread faseThread;
+	
 
 
 	while (window.isOpen()) { 
@@ -250,9 +267,12 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 			}p*/
 			if (event.type == sf::Event::TextEntered)
 			{
-				
 				if (event.text.unicode < 128) {
-					if (bFase1) {
+					if (static_cast<char>(event.text.unicode) == keyReiniciar) {
+						preparacion(PALOS, mazo, valores, manoJugador, manoCrupier);
+						//system("PracticaBlackjack.cpp");
+					}
+					if (bFase1) {//si bFase 1 esta activa llama a fase1
 						if (faseThread.joinable()) {
 							faseThread.join();
 						}
@@ -261,8 +281,9 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 							faseThread = std::thread(fase1, std::ref(mazo), std::ref(manoJugador), std::ref(puntJugador), std::ref(manoCrupier), std::ref(puntCrupier), valores);
 							//fase1(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 						}
+						
 					}
-					else if (bFase2) {
+					else if (bFase2) {//si bFase 2 esta activa llama a fase2
 						
 						if (static_cast<char>(event.text.unicode) == keyRobar) {
 							if (faseThread.joinable()) {
@@ -282,14 +303,16 @@ int pruebasSfml(int(&mazo)[52][2], int(&manoJugador)[TAMANOMANO][2], int& puntJu
 					 
 				}
 					std::cout << "ASCII character typed: " << static_cast<char>(event.text.unicode) << std::endl;
+					
 			}
-			if (bFase3) {
-				if (faseThread.joinable()) {
-					faseThread.join();
-				}
-				faseThread = std::thread(fase3, std::ref(mazo), std::ref(manoJugador), std::ref(puntJugador), std::ref(manoCrupier), std::ref(puntCrupier), valores);
-				//fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
+			
+		}if (bFase3) {////si bFase3 esta activa llama a fase3
+			if (faseThread.joinable()) {
+				faseThread.join();
 			}
+			cout << "fase3";
+			faseThread = std::thread(fase3, std::ref(mazo), std::ref(manoJugador), std::ref(puntJugador), std::ref(manoCrupier), std::ref(puntCrupier), valores);
+			//fase3(mazo, manoJugador, puntJugador, manoCrupier, puntCrupier, valores);
 		}
 		
 
@@ -353,7 +376,7 @@ int main()
 	int manoCrupier[TAMANOMANO][2];
 	int puntCrupier = 0;
 
-	preparacion(PALOS, mazo, valorCartas);//prepara el mazo
+	preparacion(PALOS, mazo, valorCartas, manoJugador, manoCrupier);//prepara el mazo
 
 	//impresionMazo(PALOS, CARTASPALO, mazo);
 	//window();
